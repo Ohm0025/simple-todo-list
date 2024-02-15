@@ -23,7 +23,9 @@ function TodoContent(props) {
         </button>
         <button
           className="btn btn-danger"
-          onClick={(e) => props.removeTodo(props.item.id)}>
+          onClick={(e) => {
+            props.removeTodo(props.item.id);
+          }}>
           <i className="fa-solid fa-trash-can"></i>
         </button>
       </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
 import EditBar from "./components/EditBar";
@@ -9,16 +9,17 @@ import ShowAmount from "./components/ShowAmount";
 import Sort from "./components/Sort";
 import ShowInfo from "./components/ShowInfo";
 import Pagination from "./components/Pagination";
-
-const mockData = [
-  { id: uuidv4(), title: "reading", completed: false },
-  { id: uuidv4(), title: "coding", completed: true },
-  { id: uuidv4(), title: "eating", completed: true },
-  { id: uuidv4(), title: "studying", completed: false },
-];
+import axios from "axios";
 
 function App() {
-  const [todo, setTodo] = useState(mockData);
+  const [todo, setTodo] = useState([]);
+
+  useEffect(() => {
+    axios.get("http://localhost:8080/todos").then((res) => {
+      setTodo(res.data.todo);
+    });
+  }, []);
+
   const [searchText, setSearchText] = useState("");
   const [searchStatus, setSearchStatus] = useState(null);
   const [amount, setAmount] = useState(2);
@@ -27,32 +28,52 @@ function App() {
 
   //create todo
   const createTodo = (title) => {
-    setTodo((prev) => {
-      return [{ id: uuidv4(), title, completed: false }, ...prev];
-    });
+    const newTodo = {
+      id: uuidv4(),
+      title,
+      completed: false,
+    };
+    axios
+      .post("http://localhost:8080/todos", newTodo)
+      .then((res) => {
+        setTodo((prev) => {
+          return [newTodo, ...prev];
+        });
+      })
+      .catch((err) => console.log(err));
   };
 
   //remove todo
   const removeTodo = (id) => {
-    setTodo((prev) => {
-      return prev.filter((item) => item.id !== id);
-    });
+    axios
+      .delete("http://localhost:8080/todos/" + id)
+      .then((res) => {
+        setTodo((prev) => {
+          return prev.filter((item) => item.id !== id);
+        });
+      })
+      .catch((err) => console.log(err));
   };
 
   //updateTodo
   const updateTodo = (id, { title, completed }) => {
-    setTodo((prev) => {
-      return prev.map((item) => {
-        return item.id === id
-          ? {
-              ...item,
-              title: title ?? item.title,
-              completed: completed ?? item.completed,
-            }
-          : item;
+    axios
+      .put("http://localhost:8080/todos/" + id, { title, completed })
+      .then((res) => {
+        setTodo((prev) => {
+          return prev.map((item) => {
+            return item.id === id
+              ? {
+                  ...item,
+                  title: title ?? item.title,
+                  completed: completed ?? item.completed,
+                }
+              : item;
+          });
+        });
       });
-    });
   };
+
   //changeSearchText
   const changeSearchText = (findText) => {
     setSearchText(findText);
@@ -83,7 +104,7 @@ function App() {
   const filterTodo = () => {
     return [...todo].filter(
       (item) =>
-        item.title.toLowerCase().includes(searchText.toLowerCase()) &&
+        item.title?.toLowerCase().includes(searchText.toLowerCase()) &&
         (searchStatus === null || item.completed === searchStatus)
     );
   };
